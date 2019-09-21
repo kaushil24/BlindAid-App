@@ -6,7 +6,8 @@ Class definition of YOLO_v3 style detection model on image and video
 import colorsys
 import os
 from timeit import default_timer as timer
-
+import matplotlib.path as mplPath
+import numpy as np
 import numpy as np
 from keras import backend as K
 from keras.models import load_model
@@ -130,6 +131,12 @@ class YOLO(object):
                     size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
         thickness = (image.size[0] + image.size[1]) // 300
 
+        x1, y1, x2, y2, x3, y3 = image.size[0] * 0.25, image.size[1], image.size[0] * 0.75, image.size[1], image.size[0] / 2, image.size[1] * 0.75
+        draw = ImageDraw.Draw(image)
+        print(image.size)
+
+        draw.polygon([(x1, y1), (x2, y2), (x3, y3)], fill='green')
+
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
@@ -145,6 +152,15 @@ class YOLO(object):
             bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
             print(label, (left, top), (right, bottom))
+
+            coords = [(top,left), (bottom,left), (top,right), (bottom, right)]
+            poly = mplPath.Path(np.array([[x1,y1], [x2,y2], [x3,y3]]))
+            walk = poly.contains_points(coords)
+            op = walk[0] or walk[1] or walk[2] or walk[3]
+            if op:
+                draw.polygon([(x1, y1), (x2, y2), (x3, y3)], fill='red')
+                draw.text(np.array([100,100]), "STOP!!!!!", fill="RED", font=font)
+                print("File detected!!!!!!!!!!!!!!!")
 
             if top - label_size[1] >= 0:
                 text_origin = np.array([left, top - label_size[1]])
